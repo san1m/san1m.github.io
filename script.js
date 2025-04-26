@@ -6,9 +6,17 @@ import { ScrollTrigger } from "https://cdn.skypack.dev/gsap@3.11.0/ScrollTrigger
 // Register ScrollTrigger plugin
 gsap.registerPlugin(ScrollTrigger);
 
-const scene = new THREE.Scene(); // Initialize scene
-scene.background = null;
-const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000); // Set up camera
+// Initialize scene, camera, and renderer
+const scene = new THREE.Scene();
+scene.background = null; // Set to null for transparency
+
+// Set up camera with centered position
+const camera = new THREE.PerspectiveCamera(
+  60,
+  window.innerWidth / window.innerHeight,
+  0.1,
+  1000
+);
 camera.position.set(0, 0, 5);
 camera.lookAt(0, 0, 0);
 
@@ -16,7 +24,7 @@ camera.lookAt(0, 0, 0);
 const renderer = new THREE.WebGLRenderer({
   antialias: true,
   alpha: true,
-  powerPreference: "high-performance",
+  powerPreference: "high-performance"
 });
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
@@ -34,7 +42,6 @@ canvas.style.width = "100%";
 canvas.style.height = "100%";
 canvas.style.zIndex = "10"; // Higher than content
 canvas.style.pointerEvents = "none"; // Allow clicking through
-
 
 // Create an enhanced star texture for brighter, more distinct particles
 function createStarTexture() {
@@ -78,8 +85,10 @@ function createStarTexture() {
   return texture;
 }
 
-const cubeGroup = new THREE.Group(); // Create a group to hold the cube and its wireframe
-scene.add(cubeGroup); // Add cube group to the scene
+// Create a group to hold the cube and its wireframe
+const cubeGroup = new THREE.Group();
+scene.add(cubeGroup);
+
 // Create higher-resolution cube geometry
 const geometry = new THREE.BoxGeometry(2, 2, 2, 4, 4, 4);
 
@@ -88,7 +97,7 @@ const vertexShader = `
   varying vec2 vUv;
   varying vec3 vPosition;
   varying vec3 vNormal;
-  
+
   void main() {
     vUv = uv;
     vPosition = position;
@@ -101,7 +110,7 @@ const vertexShader = `
 const uniforms = {
   iTime: { value: 0 },
   iResolution: { value: new THREE.Vector2(512, 512) },
-  scrollProgress: { value: 0.0 }, // Track scroll progress
+  scrollProgress: { value: 0.0 } // Track scroll progress
 };
 
 // Enhanced galaxy shader with nebula and color shifts
@@ -112,91 +121,91 @@ const fragmentShader = `
   varying vec2 vUv;
   varying vec3 vPosition;
   varying vec3 vNormal;
-  
+
   void mainImage(out vec4 O, vec2 I) {
       vec2 r = iResolution.xy;
       vec2 z;
       vec2 i;
       vec2 f = I*(z+=4.-4.*abs(.7-dot(I=(I+I-r)/r.y, I)));
-      
+
       // Add subtle movement to pattern
       float timeOffset = sin(iTime * 0.2) * 0.1;
       f.x += timeOffset;
       f.y -= timeOffset;
-      
+
       // More iterations based on scroll progress for increasing detail
       float iterations = mix(8.0, 12.0, scrollProgress);
-      
+
       for(O *= 0.; i.y++<iterations;
           O += (sin(f += cos(f.yx*i.y+i+iTime)/i.y+.7)+1.).xyyx
           * abs(f.x-f.y));
-      
+
       O = tanh(7.*exp(z.x-4.-I.y*vec4(-1,1,2,0))/O);
-      
+
       // Add pulsing effect
       float pulse = 1.0 + 0.2 * sin(iTime * 0.5);
       O.rgb *= pulse;
-      
+
       // Add color shifting nebula effect
       float nebula = sin(I.x * 0.01 + iTime * 0.3) * sin(I.y * 0.01 - iTime * 0.2);
       nebula = abs(nebula) * 0.5;
-      
+
       // Create shifting color palette that changes with scroll
       vec3 color1 = mix(vec3(0.1, 0.2, 0.8), vec3(0.8, 0.1, 0.5), scrollProgress); // Blue to purple
       vec3 color2 = mix(vec3(0.8, 0.2, 0.7), vec3(0.2, 0.8, 0.7), scrollProgress); // Purple to teal
       vec3 colorMix = mix(color1, color2, sin(iTime * 0.2) * 0.5 + 0.5);
-      
+
       // Apply nebula color to darker areas
       O.rgb = mix(O.rgb, colorMix, nebula * (1.0 - length(O.rgb)));
   }
-  
+
   void main() {
       // Map the position on the cube face to shader coordinates
       vec2 cubeUV = vUv * iResolution;
-      
+
       vec4 fragColor;
       mainImage(fragColor, cubeUV);
-      
+
       // Add depth effect based on normals and position
       float depthFactor = abs(dot(vNormal, vec3(0.0, 0.0, 1.0)));
       fragColor.rgb *= 0.7 + 0.3 * depthFactor;
-      
+
       // Add edge glow - intensity increases with scroll
       float edge = 1.0 - max(abs(vUv.x - 0.5), abs(vUv.y - 0.5)) * 2.0;
       edge = pow(edge, 4.0);
       fragColor.rgb += edge * vec3(0.1, 0.2, 0.8) * (0.6 + scrollProgress * 0.4);
-      
+
       // Boost brightness
       fragColor.rgb *= 2.0;
-      
+
       gl_FragColor = fragColor;
   }
 `;
-//material settings
+
 // Create material with optimized settings for visibility
 const material = new THREE.ShaderMaterial({
- vertexShader: vertexShader,
+  vertexShader: vertexShader,
   fragmentShader: fragmentShader,
   uniforms: uniforms,
   transparent: true,
   opacity: 1.0,
-  side: THREE.DoubleSide,
+  side: THREE.DoubleSide
 });
 
-// Create cube mesh and add it to the scene
+// Create cube mesh
 const cube = new THREE.Mesh(geometry, material);
 cube.castShadow = true;
 cube.receiveShadow = true;
 cubeGroup.add(cube);
 
-// Create wireframe for edges and add it to the scene
+// Create wireframe for edges
 const wireframe = new THREE.LineSegments(
- new THREE.EdgesGeometry(geometry, 10), // Lower threshold for more visible edges
+  new THREE.EdgesGeometry(geometry, 10), // Lower threshold for more visible edges
   new THREE.LineBasicMaterial({
     color: 0x4488ff,
     linewidth: 1.5,
     transparent: true,
-    opacity: 0.1,
+    opacity: 0.1
   })
 );
 wireframe.scale.setScalar(1.001); // Slightly larger to prevent z-fighting
@@ -206,6 +215,7 @@ cubeGroup.add(wireframe);
 function lerp(start, end, amt) {
   return start * (1 - amt) + end * amt;
 }
+
 // Enhanced particle system with zoom effect
 function createEnhancedParticles() {
   const particleSettings = {
@@ -214,7 +224,7 @@ function createEnhancedParticles() {
     PARTICLE_REPULSION_RADIUS: 0.8,
     PARTICLE_REPULSION_STRENGTH: 0.00008,
     PARTICLE_CONNECTION_DISTANCE: 0.5, // Much smaller connection distance
-    PARTICLE_DEPTH_RANGE: 12, // How far particles extend in Z-direction
+    PARTICLE_DEPTH_RANGE: 12 // How far particles extend in Z-direction
   };
 
   const particles = new THREE.BufferGeometry();
@@ -289,7 +299,7 @@ function createEnhancedParticles() {
     opacity: 0.9, // More visible individual particles
     blending: THREE.AdditiveBlending,
     depthWrite: false,
-    sizeAttenuation: true, // Important for size to change with distance
+    sizeAttenuation: true // Important for size to change with distance
   });
 
   const particleSystem = new THREE.Points(particles, particleMaterial);
@@ -300,7 +310,7 @@ function createEnhancedParticles() {
     color: 0x3366ff,
     transparent: true,
     opacity: 0.08, // Lower opacity for subtler effect
-    blending: THREE.AdditiveBlending,
+    blending: THREE.AdditiveBlending
   });
 
   const constellationGeometry = new THREE.BufferGeometry();
@@ -313,9 +323,10 @@ function createEnhancedParticles() {
   return {
     particleSystem,
     constellationSystem,
-    settings: particleSettings,
- };
- }
+    settings: particleSettings
+  };
+}
+
 // Create enhanced particles
 const enhancedParticles = createEnhancedParticles();
 
@@ -393,6 +404,7 @@ function updateParticleZoom(scrollProgress) {
   particleSystem.geometry.attributes.size.needsUpdate = true;
   particleSystem.geometry.attributes.color.needsUpdate = true;
 }
+
 // Add special particle effects based on interactions
 function createParticleEffects() {
   const effects = {
@@ -600,9 +612,10 @@ function createParticleEffects() {
       }
 
       animatePulseWave();
-    },
+    }
   };
 
+  return effects;
 }
 
 // Initialize particle effects
@@ -629,6 +642,7 @@ window.addEventListener("resize", () => {
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 });
 
+// Set up mouse interaction with improved stability
 const mouse = new THREE.Vector2(0, 0);
 
 window.addEventListener("mousemove", (event) => {
@@ -643,7 +657,7 @@ window.addEventListener("mousemove", (event) => {
       y: "+=" + (mouse.x * 0.03 - cubeGroup.rotation.y * 0.02),
       duration: 1,
       ease: "power2.out",
-      overwrite: "auto",
+      overwrite: "auto"
     });
   }
 });
@@ -656,7 +670,7 @@ document.addEventListener("click", () => {
     y: cubeGroup.rotation.y + Math.PI * 0.25 * (Math.random() - 0.5),
     z: cubeGroup.rotation.z + Math.PI * 0.25 * (Math.random() - 0.5),
     duration: 1,
-    ease: "back.out(1.5)",
+    ease: "back.out(1.5)"
   });
 
   // Choose a random effect
@@ -688,8 +702,8 @@ function animateTextElements() {
         start: "top 80%",
         end: "top 20%",
         scrub: 1,
-        toggleActions: "play none none reverse",
-      },
+        toggleActions: "play none none reverse"
+      }
     });
 
     tl.to(
@@ -698,7 +712,7 @@ function animateTextElements() {
         opacity: 1,
         y: 0,
         duration: 1,
-        ease: "power2.out",
+        ease: "power2.out"
       },
       0
     );
@@ -710,7 +724,7 @@ function animateTextElements() {
         y: 0,
         duration: 1,
         ease: "power2.out",
-        delay: 0.2,
+        delay: 0.2
       },
       0
     );
@@ -720,11 +734,14 @@ function animateTextElements() {
       cubeGroup.position,
       {
         z: -1 * index, // Move cube deeper with each section
-        duration: 1,
+        duration: 1
       },
       0
- });
- }
+    );
+  });
+}
+
+// Create enhanced rotation timeline with extreme zoom effect
 const scrollTimeline = gsap.timeline({
   scrollTrigger: {
     trigger: ".content",
@@ -746,5 +763,201 @@ const scrollTimeline = gsap.timeline({
         zoomCurve = gsap.utils.clamp(0, 1, 2 - self.progress * 2);
       }
 
-      // Apply easing to make the style
-  
+      // Apply easing to make the zoom feel more natural
+      zoomCurve = gsap.parseEase("power2.inOut")(zoomCurve);
+
+      // Update FOV based on zoom curve - dramatic narrow FOV at max zoom
+      const minFOV = 20; // Very narrow FOV at max zoom
+      const maxFOV = 60; // Normal FOV at start/end
+      camera.fov = maxFOV - (maxFOV - minFOV) * zoomCurve;
+      camera.updateProjectionMatrix();
+
+      // Update cube scale - make it slightly larger at max zoom
+      const maxScale = 1.2;
+      cubeGroup.scale.setScalar(1 + (maxScale - 1) * zoomCurve);
+    }
+  }
+});
+
+// Extreme zoom effect as we scroll
+scrollTimeline
+  .to(cubeGroup.rotation, {
+    x: Math.PI * 1.2,
+    y: Math.PI * 2,
+    z: Math.PI * 0.3,
+    ease: "power2.inOut",
+    immediateRender: false
+  })
+  .to(
+    camera.position,
+    {
+      z: 0.8, // Extreme zoom - gets very close to the cube
+      y: 0.2,
+      x: 0,
+      ease: "power2.inOut"
+    },
+    0.5 // Place this at the middle of the timeline
+  )
+  .to(
+    camera.position,
+    {
+      z: 4.0, // Zoom back out
+      y: 0,
+      x: 0,
+      ease: "power2.inOut"
+    },
+    1.0 // Place this at the end of the timeline
+  )
+  .to(
+    {},
+    {
+      duration: 1,
+      onUpdate: function () {
+        camera.lookAt(cubeGroup.position);
+      }
+    },
+    0
+  );
+
+// Add ambient light adjustment based on scroll
+scrollTimeline.to(
+  ambientLight,
+  {
+    intensity: 1.2, // Increase ambient light as we scroll
+    ease: "power1.inOut"
+  },
+  0
+);
+
+// Animation loop with enhanced zoom effect and constellations
+function animate(timestamp) {
+  requestAnimationFrame(animate);
+
+  const timeSeconds = timestamp * 0.001;
+
+  // Update time uniform for galaxy shader
+  uniforms.iTime.value = timeSeconds;
+
+  // Add subtle continuous rotation to cube when not scrolling
+  if (!ScrollTrigger.isScrolling()) {
+    cubeGroup.rotation.x += 0.0005;
+    cubeGroup.rotation.y += 0.0008;
+  }
+
+  // Update particle animation with zoom effect
+  if (enhancedParticles && enhancedParticles.particleSystem) {
+    const particleSystem = enhancedParticles.particleSystem;
+    const constellationSystem = enhancedParticles.constellationSystem;
+    const settings = enhancedParticles.settings;
+
+    const positions = particleSystem.geometry.attributes.position.array;
+    const velocities = particleSystem.geometry.attributes.velocity.array;
+    const colors = particleSystem.geometry.attributes.color.array;
+    const particleCount = positions.length / 3;
+
+    // Get current scroll progress for zoom effect
+    const scrollProgress = uniforms.scrollProgress.value;
+
+    // Update particle zoom based on scroll
+    updateParticleZoom(scrollProgress);
+
+    // Create arrays for constellation lines
+    const connectedPoints = [];
+
+    // Pulse factor
+    const pulseFactor = 1.0 + 0.1 * Math.sin(timeSeconds * 0.5);
+
+    for (let i = 0; i < particleCount; i++) {
+      const i3 = i * 3;
+
+      // Apply gentle movement
+      positions[i3] += velocities[i3];
+      positions[i3 + 1] += velocities[i3 + 1];
+      positions[i3 + 2] += velocities[i3 + 2];
+
+      // Apply subtle mouse influence
+      positions[i3] +=
+        (mouse.x * 3 - positions[i3]) * settings.PARTICLE_MOUSE_INFLUENCE;
+      positions[i3 + 1] +=
+        (mouse.y * 3 - positions[i3 + 1]) * settings.PARTICLE_MOUSE_INFLUENCE;
+
+      // Get distance from center for boundary check
+      const distFromCenter = Math.sqrt(
+        positions[i3] * positions[i3] +
+          positions[i3 + 1] * positions[i3 + 1] +
+          positions[i3 + 2] * positions[i3 + 2]
+      );
+
+      // Reset particles if they go too far
+      if (distFromCenter > 10) {
+        // Create new position on sphere
+        const theta = Math.random() * Math.PI * 2;
+        const phi = Math.acos(2 * Math.random() - 1);
+        const radius = 5 + Math.random() * 2;
+
+        positions[i3] = radius * Math.sin(phi) * Math.cos(theta);
+        positions[i3 + 1] = radius * Math.sin(phi) * Math.sin(theta);
+        positions[i3 + 2] = radius * Math.cos(phi) * (1 - scrollProgress * 0.3); // Closer at higher scroll
+
+        // Reset velocity
+        velocities[i3] = (Math.random() - 0.5) * 0.0004;
+        velocities[i3 + 1] = (Math.random() - 0.5) * 0.0004;
+        velocities[i3 + 2] = (Math.random() - 0.5) * 0.0002;
+      }
+
+      // Create minimal constellation connections - only very close particles
+      if (i % 50 === 0 && scrollProgress > 0.6) {
+        // Much fewer connections, only at deep scroll
+        // Connect only to very close particles
+        for (let j = i + 1; j < Math.min(i + 100, particleCount); j += 10) {
+          const j3 = j * 3;
+          const dx = positions[i3] - positions[j3];
+          const dy = positions[i3 + 1] - positions[j3 + 1];
+          const dz = positions[i3 + 2] - positions[j3 + 2];
+          const distance = Math.sqrt(dx * dx + dy * dy + dz * dz);
+
+          // Significantly smaller connection distance
+          const connectionThreshold = 0.5;
+
+          if (distance < connectionThreshold) {
+            // Only connect particles that are in front of camera
+            if (positions[i3 + 2] < 3 && positions[j3 + 2] < 3) {
+              connectedPoints.push(
+                positions[i3],
+                positions[i3 + 1],
+                positions[i3 + 2],
+                positions[j3],
+                positions[j3 + 1],
+                positions[j3 + 2]
+              );
+            }
+          }
+        }
+      }
+    }
+
+    // Update constellation lines
+    const constellationGeometry = constellationSystem.geometry;
+    constellationGeometry.setAttribute(
+      "position",
+      new THREE.Float32BufferAttribute(connectedPoints, 3)
+    );
+    constellationGeometry.attributes.position.needsUpdate = true;
+
+    // Very subtle constellation effect that only appears when deeply scrolled
+    constellationSystem.material.opacity =
+      Math.max(0, scrollProgress - 0.6) * 0.15;
+
+    particleSystem.geometry.attributes.position.needsUpdate = true;
+  }
+
+  renderer.render(scene, camera);
+}
+
+// Initialize text animations when page loads
+window.addEventListener("DOMContentLoaded", () => {
+  animateTextElements();
+});
+
+// Start animation loop
+animate(0);
