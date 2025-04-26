@@ -1,4 +1,4 @@
-# Dimensional Explorations
+# A Poetic Journey 
 
 A multi-section webpage showcasing theoretical concepts with a visually engaging design, featuring an interactive 3D background using Three.js and scroll animations with GSAP.
 
