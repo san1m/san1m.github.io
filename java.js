@@ -6,17 +6,9 @@ import { ScrollTrigger } from "https://cdn.skypack.dev/gsap@3.11.0/ScrollTrigger
 // Register ScrollTrigger plugin
 gsap.registerPlugin(ScrollTrigger);
 
-// Initialize scene, camera, and renderer
-const scene = new THREE.Scene();
-scene.background = null; // Set to null for transparency
-
-// Set up camera with centered position
-const camera = new THREE.PerspectiveCamera(
-  60,
-  window.innerWidth / window.innerHeight,
-  0.1,
-  1000
-);
+const scene = new THREE.Scene(); // Initialize scene
+scene.background = null;
+const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000); // Set up camera
 camera.position.set(0, 0, 5);
 camera.lookAt(0, 0, 0);
 
@@ -42,6 +34,7 @@ canvas.style.width = "100%";
 canvas.style.height = "100%";
 canvas.style.zIndex = "10"; // Higher than content
 canvas.style.pointerEvents = "none"; // Allow clicking through
+
 
 // Create an enhanced star texture for brighter, more distinct particles
 function createStarTexture() {
@@ -85,10 +78,8 @@ function createStarTexture() {
   return texture;
 }
 
-// Create a group to hold the cube and its wireframe
-const cubeGroup = new THREE.Group();
-scene.add(cubeGroup);
-
+const cubeGroup = new THREE.Group(); // Create a group to hold the cube and its wireframe
+scene.add(cubeGroup); // Add cube group to the scene
 // Create higher-resolution cube geometry
 const geometry = new THREE.BoxGeometry(2, 2, 2, 4, 4, 4);
 
@@ -181,10 +172,10 @@ const fragmentShader = `
       gl_FragColor = fragColor;
   }
 `;
-
+//material settings
 // Create material with optimized settings for visibility
 const material = new THREE.ShaderMaterial({
-  vertexShader: vertexShader,
+ vertexShader: vertexShader,
   fragmentShader: fragmentShader,
   uniforms: uniforms,
   transparent: true,
@@ -192,15 +183,15 @@ const material = new THREE.ShaderMaterial({
   side: THREE.DoubleSide,
 });
 
-// Create cube mesh
+// Create cube mesh and add it to the scene
 const cube = new THREE.Mesh(geometry, material);
 cube.castShadow = true;
 cube.receiveShadow = true;
 cubeGroup.add(cube);
 
-// Create wireframe for edges
+// Create wireframe for edges and add it to the scene
 const wireframe = new THREE.LineSegments(
-  new THREE.EdgesGeometry(geometry, 10), // Lower threshold for more visible edges
+ new THREE.EdgesGeometry(geometry, 10), // Lower threshold for more visible edges
   new THREE.LineBasicMaterial({
     color: 0x4488ff,
     linewidth: 1.5,
@@ -215,7 +206,6 @@ cubeGroup.add(wireframe);
 function lerp(start, end, amt) {
   return start * (1 - amt) + end * amt;
 }
-
 // Enhanced particle system with zoom effect
 function createEnhancedParticles() {
   const particleSettings = {
@@ -324,9 +314,8 @@ function createEnhancedParticles() {
     particleSystem,
     constellationSystem,
     settings: particleSettings,
-  };
-}
-
+ };
+ }
 // Create enhanced particles
 const enhancedParticles = createEnhancedParticles();
 
@@ -404,7 +393,6 @@ function updateParticleZoom(scrollProgress) {
   particleSystem.geometry.attributes.size.needsUpdate = true;
   particleSystem.geometry.attributes.color.needsUpdate = true;
 }
-
 // Add special particle effects based on interactions
 function createParticleEffects() {
   const effects = {
@@ -615,7 +603,6 @@ function createParticleEffects() {
     },
   };
 
-  return effects;
 }
 
 // Initialize particle effects
@@ -642,7 +629,6 @@ window.addEventListener("resize", () => {
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 });
 
-// Set up mouse interaction with improved stability
 const mouse = new THREE.Vector2(0, 0);
 
 window.addEventListener("mousemove", (event) => {
@@ -737,11 +723,8 @@ function animateTextElements() {
         duration: 1,
       },
       0
-    );
-  });
-}
-
-// Create enhanced rotation timeline with extreme zoom effect
+ });
+ }
 const scrollTimeline = gsap.timeline({
   scrollTrigger: {
     trigger: ".content",
