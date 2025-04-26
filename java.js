@@ -1,13 +1,9 @@
-// Import libraries from CDN
-import * as THREE from "https://cdn.skypack.dev/three@0.136.0";
-import { gsap } from "https://cdn.skypack.dev/gsap@3.11.0";
-import { ScrollTrigger } from "https://cdn.skypack.dev/gsap@3.11.0/ScrollTrigger";
 
-// Register ScrollTrigger plugin
-gsap.registerPlugin(ScrollTrigger);
+// Ensure Three.js, gsap, and ScrollTrigger are loaded before this script
+
 
 // Initialize scene, camera, and renderer
-const scene = new THREE.Scene();
+const scene = new THREE.Scene();// Use existing THREE object
 scene.background = null; // Set to null for transparency
 
 // Set up camera with centered position
@@ -105,7 +101,7 @@ const vertexShader = `
     gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
   }
 `;
-
+console.log(THREE)
 // Create shader material with enhanced uniforms
 const uniforms = {
   iTime: { value: 0 },
@@ -258,12 +254,12 @@ function createEnhancedParticles() {
     originalPositions[i * 3 + 2] = positions[i * 3 + 2];
 
     // Store original depth for zoom calculation
-    depths[i] = positions[i * 3 + 2];
+    depths[i] = positions[i * 3 + 2]; 
 
     // Gentler velocities
     velocities[i * 3] = (Math.random() - 0.5) * 0.0004;
     velocities[i * 3 + 1] = (Math.random() - 0.5) * 0.0004;
-    velocities[i * 3 + 2] = (Math.random() - 0.5) * 0.0002; // Less z movement
+    velocities[i * 3 + 2] = (Math.random() - 0.5) * 0.0002; 
 
     // Size based on depth - farther particles are smaller
     const z = positions[i * 3 + 2];
@@ -342,11 +338,11 @@ function updateParticleZoom(scrollProgress) {
   const colors = particleSystem.geometry.attributes.color.array;
   const particleCount = positions.length / 3;
 
-  // Create bell curve for zoom effect - matches cube zoom curve
+  // Curve for zoom effect - matches cube zoom curve
   let zoomCurve;
   if (scrollProgress < 0.5) {
     // First half - zoom in (0 to 1)
-    zoomCurve = gsap.utils.clamp(0, 1, scrollProgress * 2);
+    zoomCurve = Math.max(0, Math.min(1, scrollProgress * 2)); 
   } else {
     // Second half - zoom out (1 to 0)
     zoomCurve = gsap.utils.clamp(0, 1, 2 - scrollProgress * 2);
@@ -354,7 +350,7 @@ function updateParticleZoom(scrollProgress) {
 
   // Apply easing to make the zoom feel more natural
   zoomCurve = gsap.parseEase("power2.inOut")(zoomCurve);
-
+    
   // Enhanced particle zoom effect that matches cube zoom
   for (let i = 0; i < particleCount; i++) {
     const i3 = i * 3;
@@ -434,7 +430,7 @@ function createParticleEffects() {
       }
 
       // Emit particles from random vertices
-      for (let i = 0; i < count; i++) {
+      for (let i = 0; i < count; i++) { 
         // Select random particles to repurpose
         const particleIndex = Math.floor(Math.random() * particleCount);
         const i3 = particleIndex * 3;
@@ -737,10 +733,11 @@ function animateTextElements() {
         duration: 1
       },
       0
-    );
+    );    
   });
 }
-
+if (!window.gsap) {
+  console.error("GSAP is not loaded.");}
 // Create enhanced rotation timeline with extreme zoom effect
 const scrollTimeline = gsap.timeline({
   scrollTrigger: {
@@ -751,17 +748,17 @@ const scrollTimeline = gsap.timeline({
     markers: false,
     onUpdate: (self) => {
       // Update scroll progress uniform in shader
-      uniforms.scrollProgress.value = self.progress;
-
+      uniforms.scrollProgress.value = self.progress;      
       // Create bell curve for zoom effect - max zoom at middle of scroll
       let zoomCurve;
       if (self.progress < 0.5) {
         // First half - zoom in (0 to 1)
-        zoomCurve = gsap.utils.clamp(0, 1, self.progress * 2);
+        zoomCurve = Math.max(0, Math.min(1, self.progress * 2));
       } else {
         // Second half - zoom out (1 to 0)
-        zoomCurve = gsap.utils.clamp(0, 1, 2 - self.progress * 2);
+        zoomCurve = Math.max(0, Math.min(1, 2 - self.progress * 2));
       }
+      
 
       // Apply easing to make the zoom feel more natural
       zoomCurve = gsap.parseEase("power2.inOut")(zoomCurve);
@@ -891,17 +888,16 @@ function animate(timestamp) {
       // Reset particles if they go too far
       if (distFromCenter > 10) {
         // Create new position on sphere
-        const theta = Math.random() * Math.PI * 2;
-        const phi = Math.acos(2 * Math.random() - 1);
-        const radius = 5 + Math.random() * 2;
-
-        positions[i3] = radius * Math.sin(phi) * Math.cos(theta);
-        positions[i3 + 1] = radius * Math.sin(phi) * Math.sin(theta);
-        positions[i3 + 2] = radius * Math.cos(phi) * (1 - scrollProgress * 0.3); // Closer at higher scroll
-
+            const theta = Math.random() * Math.PI * 2;
+            const phi = Math.acos(2 * Math.random() - 1);
+            const radius = 5 + Math.random() * 2;
+    
+            positions[i3] = radius * Math.sin(phi) * Math.cos(theta);
+            positions[i3 + 1] = radius * Math.sin(phi) * Math.sin(theta);
+            positions[i3 + 2] = radius * Math.cos(phi) * (1 - scrollProgress * 0.3);
+    
         // Reset velocity
-        velocities[i3] = (Math.random() - 0.5) * 0.0004;
-        velocities[i3 + 1] = (Math.random() - 0.5) * 0.0004;
+        velocities[i3] = (Math.random() - 0.5) * 0.0004;        velocities[i3 + 1] = (Math.random() - 0.5) * 0.0004;
         velocities[i3 + 2] = (Math.random() - 0.5) * 0.0002;
       }
 
@@ -960,4 +956,4 @@ window.addEventListener("DOMContentLoaded", () => {
 });
 
 // Start animation loop
-animate(0);
+animate(0); 
